@@ -1,5 +1,4 @@
 #quote-output {
-    position: absolute;
     max-width: 25rem;
     background-color: #1b1c1f;
     color: white;
@@ -7,6 +6,7 @@
     padding: 0.8rem 1.6rem;
     font-size: 1rem;
     line-height: 1.6;
+    margin-bottom: 1rem;
 }
 
 #quote-output.far {
@@ -14,7 +14,14 @@
     left: 87.5rem;
 }
 
-#quote-output.close {
+#quote-output.no-complementary-result-high {
+    position: absolute;
     top: 12.5rem;
+    left: 62.5rem;
+}
+
+#quote-output.no-complementary-result-low {
+    position: absolute;
+    top: 35rem;
     left: 62.5rem;
 }

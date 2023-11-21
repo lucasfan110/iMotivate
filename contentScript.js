@@ -40,29 +40,42 @@
 
         try {
             const quote = await chatgptQuote(prompt);
+            onFinish(error);
             element.textContent = quote;
         } catch (e) {
-            error = e;
-        } finally {
             onFinish(error);
         }
     }
 
     function hasComplementaryResult() {
-        const element = document.querySelector(".TQc1id.rhstc4");
+        return document.querySelector(".TQc1id.rhstc4") !== null;
+    }
 
-        return element !== null;
+    function hasFeaturedSnippet() {
+        return document.querySelector(".M8OgIe") !== null;
     }
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         const { type, query } = obj;
         const isInIframe = window.top !== window.self;
 
-        if (type === "SEARCH" && !isInIframe) {
+        const hasQuoteOutput = document.querySelector("#quote-output") !== null;
+
+        if (type === "SEARCH" && !isInIframe && !hasQuoteOutput) {
             const div = document.createElement("div");
             div.id = "quote-output";
-            div.className = `${hasComplementaryResult() ? "far" : "close"}`;
-            document.body.append(div);
+
+            if (!hasComplementaryResult()) {
+                if (hasFeaturedSnippet()) {
+                    div.className = "no-complementary-result-low";
+                } else {
+                    div.className = "no-complementary-result-high";
+                }
+
+                document.body.append(div);
+            } else {
+                document.querySelector(".TQc1id.rhstc4").prepend(div);
+            }
 
             const description = document.createElement("p");
             description.textContent = "iMotivate";
