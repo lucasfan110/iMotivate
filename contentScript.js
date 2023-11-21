@@ -23,14 +23,29 @@
         );
 
         let data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.code);
+        }
+
         data = data.choices[0].message.content;
         return data;
     }
 
+    /**
+     * @param onFinish accepts an argument which will be the error, if there is one
+     */
     async function setQuote(element, prompt, onFinish) {
-        const quote = await chatgptQuote(prompt);
-        onFinish();
-        element.textContent = quote;
+        let error = undefined;
+
+        try {
+            const quote = await chatgptQuote(prompt);
+            element.textContent = quote;
+        } catch (e) {
+            error = e;
+        } finally {
+            onFinish(error);
+        }
     }
 
     function hasComplementaryResult() {
@@ -67,8 +82,12 @@
                     text.textContent = "Generating.";
                 }
             }, 500);
-            setQuote(text, query, () => {
+            setQuote(text, query, error => {
                 clearInterval(intervalId);
+
+                if (error) {
+                    text.textContent = `Failed to generate quote! ${error}`;
+                }
             });
 
             // text.textContent = "Quote generation is disabled";
