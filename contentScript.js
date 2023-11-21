@@ -1,8 +1,22 @@
 (() => {
-    async function chatgptQuote(prompt) {
-        let response = await fetch(
-            "https://api.openai.com/v1/chat/completions",
-            {
+    class QuoteGenerator {
+        requestInit;
+        prompt;
+
+        constructor(prompt) {
+            this.prompt = prompt;
+        }
+
+        set prompt(prompt) {
+            this.prompt = prompt;
+        }
+
+        get prompt() {
+            return this.prompt;
+        }
+
+        generateRequestInit = () => {
+            return {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -19,17 +33,24 @@
                     temperature: 0.7,
                     max_tokens: 25,
                 }),
+            };
+        };
+
+        generateQuote = async () => {
+            let response = await fetch(
+                "https://api.openai.com/v1/chat/completions",
+                this.generateRequestInit()
+            );
+
+            let data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.code);
             }
-        );
 
-        let data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error.code);
-        }
-
-        data = data.choices[0].message.content;
-        return data;
+            data = data.choices[0].message.content;
+            return data;
+        };
     }
 
     /**
@@ -39,7 +60,9 @@
         let error = undefined;
 
         try {
-            const quote = await chatgptQuote(prompt);
+            // const quote = await chatgptQuote(prompt);
+            const quoteGenerator = new QuoteGenerator(prompt);
+            const quote = await quoteGenerator.generateQuote();
             onFinish(error);
             element.textContent = quote;
         } catch (e) {
