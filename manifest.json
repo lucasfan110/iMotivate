@@ -1,37 +1,38 @@
 {
-    "name": "iMotivate",
-    "version": "0.0.1",
-    "description": "Automatic quote generator that generates a relevant quote when you search something",
-    "author": "Lucas Fan, Bob Zhou",
-    "permissions": [
-        "storage",
-        "tabs",
-        "activeTab",
-        "scripting"
-    ],
-    "host_permissions": [
-        "https://*.google.com/search"
-    ],
-    "background": {
-        "service_worker": "background.js"
-    },
-    "content_scripts": [
-        {
-            "all_frames": true,
-            "matches": [
-                "<all_urls>"
-            ],
-            "css": [
-                "contentScript.css"
-            ],
-            "js": [
-                "contentScript.js"
-            ]
-        }
-    ],
-    "action": {
-        "default_title": "iMotivate",
-        "default_popup": "index.html"
-    },
-    "manifest_version": 3
+	"name": "iMotivate",
+	"version": "0.0.1",
+	"description": "Automatic quote generator that generates a relevant quote when you search something",
+	"author": "Lucas Fan, Bob Zhou",
+	"permissions": [
+		"storage",
+		"tabs",
+		"activeTab",
+		"scripting"
+	],
+	"host_permissions": [
+		"https://*.google.com/search"
+	],
+	"background": {
+		"service_worker": "background.js"
+	},
+	"content_scripts": [
+		{
+			"all_frames": true,
+			"matches": [
+				"<all_urls>"
+			],
+			"css": [
+				"contentScript.css"
+			],
+			"js": [
+				"icons.js",
+				"contentScript.js"
+			]
+		}
+	],
+	"action": {
+		"default_title": "iMotivate",
+		"default_popup": "index.html"
+	},
+	"manifest_version": 3
 }

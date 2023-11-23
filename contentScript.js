@@ -1,133 +1,163 @@
-(() => {
-    class QuoteGenerator {
-        requestInit;
-        prompt;
+(async () => {
+	let storageCache = { favoriteQuotes: [] };
 
-        constructor(prompt) {
-            this.prompt = prompt;
-        }
+	const items = await chrome.storage.sync.get();
+	Object.assign(storageCache, items);
 
-        set prompt(prompt) {
-            this.prompt = prompt;
-        }
+	console.log(storageCache);
 
-        get prompt() {
-            return this.prompt;
-        }
+	class QuoteGenerator {
+		requestInit;
+		prompt;
 
-        generateRequestInit = () => {
-            return {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: API_KEY,
-                },
-                body: JSON.stringify({
-                    model: "gpt-3.5-turbo",
-                    messages: [
-                        {
-                            role: "user",
-                            content: `Generate a quote that is relevant to ${prompt} that is under 25 words`,
-                        },
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 25,
-                }),
-            };
-        };
+		constructor(prompt) {
+			this.prompt = prompt;
+		}
 
-        generateQuote = async () => {
-            let response = await fetch(
-                "https://api.openai.com/v1/chat/completions",
-                this.generateRequestInit()
-            );
+		set prompt(prompt) {
+			this.prompt = prompt;
+		}
 
-            let data = await response.json();
+		get prompt() {
+			return this.prompt;
+		}
 
-            if (data.error) {
-                throw new Error(data.error.code);
-            }
+		generateRequestInit = () => {
+			return {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: API_KEY,
+				},
+				body: JSON.stringify({
+					model: "gpt-3.5-turbo",
+					messages: [
+						{
+							role: "user",
+							content: `Generate a quote that is relevant to ${this.prompt} that is under 25 words`,
+						},
+					],
+					temperature: 0.7,
+					max_tokens: 25,
+				}),
+			};
+		};
 
-            data = data.choices[0].message.content;
-            return data;
-        };
-    }
+		generateQuote = async () => {
+			let response = await fetch(
+				"https://api.openai.com/v1/chat/completions",
+				this.generateRequestInit()
+			);
 
-    /**
-     * @param onFinish accepts an argument which will be the error, if there is one
-     */
-    async function setQuote(element, prompt, onFinish) {
-        let error = undefined;
+			let data = await response.json();
 
-        try {
-            // const quote = await chatgptQuote(prompt);
-            const quoteGenerator = new QuoteGenerator(prompt);
-            const quote = await quoteGenerator.generateQuote();
-            onFinish(error);
-            element.textContent = quote;
-        } catch (e) {
-            onFinish(error);
-        }
-    }
+			if (data.error) {
+				throw new Error(data.error.code);
+			}
 
-    function hasComplementaryResult() {
-        return document.querySelector(".TQc1id.rhstc4") !== null;
-    }
+			data = data.choices[0].message.content;
+			return data;
+		};
+	}
 
-    function hasFeaturedSnippet() {
-        return document.querySelector(".M8OgIe") !== null;
-    }
+	/**
+	 * @param onFinish accepts an argument which will be the error, if there is one
+	 */
+	async function setQuote(element, prompt, onFinish) {
+		let error = undefined;
 
-    chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        const { type, query } = obj;
-        const isInIframe = window.top !== window.self;
+		try {
+			// const quote = await chatgptQuote(prompt);
+			const quoteGenerator = new QuoteGenerator(prompt);
+			const quote = await quoteGenerator.generateQuote();
+			onFinish(error, quote);
+			element.textContent = quote;
+		} catch (e) {
+			onFinish(error);
+		}
+	}
 
-        const hasQuoteOutput = document.querySelector("#quote-output") !== null;
+	function hasComplementaryResult() {
+		return document.querySelector(".TQc1id.rhstc4") !== null;
+	}
 
-        if (type === "SEARCH" && !isInIframe && !hasQuoteOutput) {
-            const div = document.createElement("div");
-            div.id = "quote-output";
+	function hasFeaturedSnippet() {
+		return document.querySelector(".M8OgIe") !== null;
+	}
 
-            if (!hasComplementaryResult()) {
-                if (hasFeaturedSnippet()) {
-                    div.className = "no-complementary-result-low";
-                } else {
-                    div.className = "no-complementary-result-high";
-                }
+	chrome.runtime.onMessage.addListener((obj, sender, response) => {
+		const { type, query } = obj;
+		const isInIframe = window.top !== window.self;
 
-                document.body.append(div);
-            } else {
-                document.querySelector(".TQc1id.rhstc4").prepend(div);
-            }
+		const hasQuoteOutput = document.querySelector("#quote-output") !== null;
 
-            const description = document.createElement("p");
-            description.textContent = "iMotivate";
-            div.append(description);
+		if (type === "SEARCH" && !isInIframe && !hasQuoteOutput) {
+			const div = document.createElement("div");
+			div.id = "quote-output";
 
-            const quoteGeneratedByIMotivate = document.createElement("p");
-            quoteGeneratedByIMotivate.textContent =
-                "Quote generated that is relevant to what you searched:";
-            div.append(quoteGeneratedByIMotivate);
+			if (!hasComplementaryResult()) {
+				if (hasFeaturedSnippet()) {
+					div.className = "no-complementary-result-low";
+				} else {
+					div.className = "no-complementary-result-high";
+				}
 
-            const text = document.createElement("p");
+				document.body.append(div);
+			} else {
+				document.querySelector(".TQc1id.rhstc4").prepend(div);
+			}
 
-            text.textContent = "Generating.";
-            const intervalId = setInterval(() => {
-                text.textContent = text.textContent + ".";
-                if (text.textContent === "Generating....") {
-                    text.textContent = "Generating.";
-                }
-            }, 500);
-            setQuote(text, query, error => {
-                clearInterval(intervalId);
+			const description = document.createElement("p");
+			description.textContent = "iMotivate";
+			div.append(description);
 
-                if (error) {
-                    text.textContent = `Failed to generate quote! ${error}`;
-                }
-            });
+			const quoteGeneratedByIMotivate = document.createElement("p");
+			quoteGeneratedByIMotivate.textContent =
+				"Quote generated that is relevant to what you searched:";
+			div.append(quoteGeneratedByIMotivate);
 
-            // text.textContent = "Quote generation is disabled";
-            div.append(text);
-        }
-    });
+			const text = document.createElement("p");
+
+			text.textContent = "Generating.";
+			const intervalId = setInterval(() => {
+				text.textContent = text.textContent + ".";
+				if (text.textContent === "Generating....") {
+					text.textContent = "Generating.";
+				}
+			}, 500);
+			setQuote(text, query, (error, quote) => {
+				clearInterval(intervalId);
+				favoriteButton.style.display = "block";
+
+				favoriteButton.addEventListener("click", () => {
+					favoriteButton.innerHTML = filledStarIcon;
+
+					chrome.storage.sync.set({
+						favoriteQuotes: [
+							...storageCache.favoriteQuotes,
+							{
+								date: Date.now(),
+								query,
+								quote,
+							},
+						],
+					});
+				});
+
+				if (error) {
+					text.textContent = `Failed to generate quote! ${error}`;
+				}
+			});
+
+			// text.textContent = "Quote generation is disabled";
+			div.append(text);
+
+			const favoriteButton = document.createElement("button");
+			favoriteButton.innerHTML = emptyStarIcon;
+			favoriteButton.classList.add("favorite-button");
+			favoriteButton.style.display = "none";
+
+			div.append(favoriteButton);
+		}
+	});
 })();
