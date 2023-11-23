@@ -4,8 +4,6 @@
 	const items = await chrome.storage.sync.get();
 	Object.assign(storageCache, items);
 
-	console.log(storageCache);
-
 	class QuoteGenerator {
 		requestInit;
 		prompt;

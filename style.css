@@ -1,0 +1,75 @@
+:root {
+	--color-gray-dark-1: #222222;
+	--color-gray-dark-2: #2d2d2d;
+	--color-gray-1: #888;
+	--color-gray-2: #555;
+	--color-white: #fff;
+}
+
+::-webkit-scrollbar {
+	width: 5px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-gray-1);
+	border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-gray-2);
+}
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	box-sizing: border-box;
+	font-family: "Inter", sans-serif;
+	width: 30rem;
+	background-color: var(--color-gray-dark-1);
+	color: var(--color-white);
+	padding: 0 1.5rem;
+	font-size: 1.4rem;
+}
+
+h1 {
+	font-size: 3.5rem;
+	font-weight: normal;
+}
+
+p {
+	line-height: 1.5;
+}
+
+#favorite-quotes {
+	max-height: 15rem;
+	overflow: auto;
+}
+
+#favorite-quotes .quote {
+	font-size: 1.2rem;
+	background-color: var(--color-gray-dark-2);
+	border-radius: 1.5rem;
+	padding: 2px 1.5rem;
+}
+
+#favorite-quotes .quote .query {
+	font-weight: bold;
+	text-transform: uppercase;
+	text-align: center;
+}
+
+#favorite-quotes .quote .date {
+	text-align: right;
+	display: block;
+	font-size: 1rem;
+}
+
+#favorite-quotes .quote:not(:last-child) {
+	margin-bottom: 1rem;
+}
