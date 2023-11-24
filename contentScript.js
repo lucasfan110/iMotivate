@@ -1,8 +1,13 @@
 (async () => {
-	let storageCache = { favoriteQuotes: [] };
+	let storageCache = { favoriteQuotes: [], cachedQuotes: []};
 
 	const items = await chrome.storage.sync.get();
 	Object.assign(storageCache, items);
+
+	const predefinedQuotes = [
+		{ query: "builtin1", quote: "ching chong"},
+		{ query: "builtin2", quote: "bing bong" },
+	];
 
 	class QuoteGenerator {
 		requestInit;
@@ -47,6 +52,7 @@
 				this.generateRequestInit()
 			);
 
+
 			let data = await response.json();
 
 			if (data.error) {
@@ -54,6 +60,7 @@
 			}
 
 			data = data.choices[0].message.content;
+
 			return data;
 		};
 	}
@@ -68,10 +75,33 @@
 			// const quote = await chatgptQuote(prompt);
 			const quoteGenerator = new QuoteGenerator(prompt);
 			const quote = await quoteGenerator.generateQuote();
+
+			storageCache.cachedQuotes.push({
+				date: Date.now(),
+				query: prompt,
+				quote: quote,
+			});
+
+			if (storageCache.cachedQuotes.length > 20) {
+				storageCache.cachedQuotes.shift();
+			}
+
+			chrome.storage.sync.set(storageCache);
+
 			onFinish(error, quote);
 			element.textContent = quote;
 		} catch (e) {
 			onFinish(error);
+			if (storageCache.cachedQuotes.length === 0) {
+				storageCache.cachedQuotes = predefinedQuotes.map((predefined) => ({
+					date: Date.now(),
+					query: predefined.query,
+					quote: predefined.quote,
+				}));
+				chrome.storage.sync.set(storageCache);
+			}
+			const index = Math.floor(Math.random() * storageCache.cachedQuotes.length);
+			element.textContent = new Date(parseInt(storageCache.cachedQuotes[index].date)) + ': ' + storageCache.cachedQuotes[index].quote;
 		}
 	}
 
@@ -104,6 +134,7 @@
 			} else {
 				document.querySelector(".TQc1id.rhstc4").prepend(div);
 			}
+
 
 			const description = document.createElement("p");
 			description.textContent = "iMotivate";
@@ -156,6 +187,20 @@
 			favoriteButton.style.display = "none";
 
 			div.append(favoriteButton);
+
+			const clearCacheButton = document.createElement("button");
+			clearCacheButton.textContent = "Clear Cached Quotes";
+			clearCacheButton.classList.add("clear-cache-button");
+			clearCacheButton.style.display = "block";
+
+			div.append(clearCacheButton);
+
+			clearCacheButton.addEventListener("click", () => {
+				storageCache.cachedQuotes = []; // Clear the cached quotes
+				chrome.storage.sync.set({ cachedQuotes: [] }); // Update the storage
+				// Optionally, update the UI to reflect the cleared cache
+				text.textContent = "Cached quotes cleared.";
+			});
 		}
 	});
 })();
