@@ -1,12 +1,31 @@
 (async () => {
-	let storageCache = { favoriteQuotes: [], cachedQuotes: []};
+	let storageCache = { favoriteQuotes: [], cachedQuotes: [] };
 
 	const items = await chrome.storage.sync.get();
 	Object.assign(storageCache, items);
 
 	const predefinedQuotes = [
-		{ query: "builtin1", quote: "ching chong"},
-		{ query: "builtin2", quote: "bing bong" },
+		{
+			query: "builtin1",
+			quote: `"We cannot solve problems with the kind of thinking we employed when we came up with them." — Albert Einstein`,
+		},
+		{
+			query: "builtin2",
+			quote: `"Learn as if you will live forever, live like you will die tomorrow." — Mahatma Gandhi`,
+		},
+
+		{
+			query: "builtin3",
+			quote: `"Stay away from those people who try to disparage your ambitions. Small minds will always do that, but great minds will give you a feeling that you can become great too." — Mark Twain`,
+		},
+		{
+			query: "builtin4",
+			quote: `"When you give joy to other people, you get more joy in return. You should give a good thought to happiness that you can give out."— Eleanor Roosevelt`,
+		},
+		{
+			query: "builtin5",
+			quote: `"When you change your thoughts, remember to also change your world."—Norman Vincent Peale`,
+		},
 	];
 
 	class QuoteGenerator {
@@ -52,7 +71,6 @@
 				this.generateRequestInit()
 			);
 
-
 			let data = await response.json();
 
 			if (data.error) {
@@ -93,15 +111,26 @@
 		} catch (e) {
 			onFinish(error);
 			if (storageCache.cachedQuotes.length === 0) {
-				storageCache.cachedQuotes = predefinedQuotes.map((predefined) => ({
-					date: Date.now(),
-					query: predefined.query,
-					quote: predefined.quote,
-				}));
+				storageCache.cachedQuotes = predefinedQuotes.map(
+					predefined => ({
+						date: Date.now(),
+						query: predefined.query,
+						quote: predefined.quote,
+					})
+				);
 				chrome.storage.sync.set(storageCache);
 			}
-			const index = Math.floor(Math.random() * storageCache.cachedQuotes.length);
-			element.textContent = new Date(parseInt(storageCache.cachedQuotes[index].date)) + ': ' + storageCache.cachedQuotes[index].quote;
+			const index = Math.floor(
+				Math.random() * storageCache.cachedQuotes.length
+			);
+
+			const date = new Date(storageCache.cachedQuotes[index].date);
+
+			element.innerHTML =
+				"Failed to get quote! Here is a random quote from your recent searches:<br />";
+			element.innerHTML += `${date.toLocaleDateString()}: ${
+				storageCache.cachedQuotes[index].quote
+			}`;
 		}
 	}
 
@@ -134,7 +163,6 @@
 			} else {
 				document.querySelector(".TQc1id.rhstc4").prepend(div);
 			}
-
 
 			const description = document.createElement("p");
 			description.textContent = "iMotivate";
@@ -190,8 +218,7 @@
 
 			const clearCacheButton = document.createElement("button");
 			clearCacheButton.textContent = "Clear Cached Quotes";
-			clearCacheButton.classList.add("clear-cache-button");
-			clearCacheButton.style.display = "block";
+			clearCacheButton.classList.add("btn");
 
 			div.append(clearCacheButton);
 

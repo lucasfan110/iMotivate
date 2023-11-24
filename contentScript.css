@@ -38,3 +38,15 @@
 #quote-output .favorite-button:hover {
 	background-color: darkgray;
 }
+
+#quote-output .btn {
+	display: block;
+	border: none;
+	background: none;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: inherit;
+	background-color: #22232a;
+	padding: 0.8rem 1rem;
+	border-radius: 5px;
+}
