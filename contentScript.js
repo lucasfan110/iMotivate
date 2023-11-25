@@ -44,6 +44,9 @@
 			return this.prompt;
 		}
 
+		/**
+		 * Generate the request info object for fetching the quote
+		 */
 		generateRequestInit = () => {
 			return {
 				method: "POST",
@@ -84,7 +87,10 @@
 	}
 
 	/**
-	 * @param onFinish accepts an argument which will be the error, if there is one
+	 * Display quote to the `element` parameter
+	 * @param {HTMLElement} element
+	 * @param {string} prompt
+	 * @param {(error: any, quote: string) => void} onFinish called when quote is generated, or if it failed to generate. It gives two argument: `error` and `quote`
 	 */
 	async function setQuote(element, prompt, onFinish) {
 		let error = undefined;
@@ -94,43 +100,11 @@
 			const quoteGenerator = new QuoteGenerator(prompt);
 			const quote = await quoteGenerator.generateQuote();
 
-			storageCache.cachedQuotes.push({
-				date: Date.now(),
-				query: prompt,
-				quote: quote,
-			});
-
-			if (storageCache.cachedQuotes.length > 20) {
-				storageCache.cachedQuotes.shift();
-			}
-
-			chrome.storage.sync.set(storageCache);
-
 			onFinish(error, quote);
 			element.textContent = quote;
 		} catch (e) {
+			error = e;
 			onFinish(error);
-			if (storageCache.cachedQuotes.length === 0) {
-				storageCache.cachedQuotes = predefinedQuotes.map(
-					predefined => ({
-						date: Date.now(),
-						query: predefined.query,
-						quote: predefined.quote,
-					})
-				);
-				chrome.storage.sync.set(storageCache);
-			}
-			const index = Math.floor(
-				Math.random() * storageCache.cachedQuotes.length
-			);
-
-			const date = new Date(storageCache.cachedQuotes[index].date);
-
-			element.innerHTML =
-				"Failed to get quote! Here is a random quote from your recent searches:<br />";
-			element.innerHTML += `${date.toLocaleDateString()}: ${
-				storageCache.cachedQuotes[index].quote
-			}`;
 		}
 	}
 
@@ -142,92 +116,198 @@
 		return document.querySelector(".M8OgIe") !== null;
 	}
 
+	/**
+	 * Caches the quote to the chrome storage
+	 * @param {string} prompt
+	 * @param {string} quote
+	 */
+	function cacheQuote(prompt, quote) {
+		storageCache.cachedQuotes.push({
+			date: Date.now(),
+			query: prompt,
+			quote,
+		});
+
+		if (storageCache.cachedQuotes.length > 20) {
+			storageCache.cachedQuotes.shift();
+		}
+
+		chrome.storage.sync.set(storageCache);
+	}
+
+	/**
+	 * Returns a random element in array
+	 * @param {Array} array
+	 */
+	function randomElement(array) {
+		if (array.length === 0) {
+			return undefined;
+		}
+
+		return array[Math.floor(Math.random() * array.length)];
+	}
+
+	/**
+	 * Get a random quote from the cached quotes
+	 */
+	function getRandomCachedQuote() {
+		if (storageCache.cachedQuotes.length === 0) {
+			return randomElement(
+				predefinedQuotes.map(predefined => ({
+					date: Date.now(),
+					...predefined,
+				}))
+			);
+		}
+
+		return randomElement(storageCache.cachedQuotes);
+	}
+
+	/**
+	 * Add a quote to favorites and store it in chrome's storage system
+	 * @param {string} query
+	 * @param {string} quote
+	 */
+	function addFavoriteQuote(query, quote) {
+		chrome.storage.sync.set({
+			favoriteQuotes: [
+				...storageCache.favoriteQuotes,
+				{
+					date: Date.now(),
+					query,
+					quote,
+				},
+			],
+		});
+	}
+
+	/**
+	 * Displays cached quote with the element given
+	 * @param {HTMLElement} element
+	 */
+	function displayCachedQuote(element) {
+		const randomCachedQuote = getRandomCachedQuote();
+		const date = new Date(randomCachedQuote.date);
+		element.innerHTML =
+			"Failed to get quote! Here is a random quote from your recent searches:<br />";
+		if (storageCache.cachedQuotes.length === 0) {
+			element.innerHTML +=
+				"<br />No cached quote! Here is a predefined quote:<br />";
+			element.innerHTML += randomCachedQuote.quote;
+		} else {
+			element.innerHTML += `${date.toLocaleDateString()}: ${
+				randomCachedQuote.quote
+			}`;
+		}
+	}
+
+	function createFavoriteButton() {
+		const favoriteButton = document.createElement("button");
+		favoriteButton.innerHTML = emptyStarIcon;
+		favoriteButton.classList.add("favorite-button");
+		favoriteButton.style.display = "none";
+		return favoriteButton;
+	}
+
+	function createClearCacheButton() {
+		const clearCacheButton = document.createElement("button");
+		clearCacheButton.textContent = "Clear Cached Quotes";
+		clearCacheButton.classList.add("btn");
+		clearCacheButton.style.display = "none";
+		return clearCacheButton;
+	}
+
+	function createQuoteOutput() {
+		const quoteOutput = document.createElement("div");
+		quoteOutput.id = "quote-output";
+
+		if (!hasComplementaryResult()) {
+			if (hasFeaturedSnippet()) {
+				div.className = "no-complementary-result-low";
+			} else {
+				div.className = "no-complementary-result-high";
+			}
+		}
+
+		return quoteOutput;
+	}
+
+	/**
+	 * Adds the quote output div to the appropriate place in DOM, based on the search results
+	 * @param {HTMLElement} quoteOutput
+	 */
+	function addQuoteOutputToDom(quoteOutput) {
+		if (!hasComplementaryResult()) {
+			document.body.append(quoteOutput);
+		} else {
+			document.querySelector(".TQc1id.rhstc4").prepend(quoteOutput);
+		}
+	}
+
+	function createPWithText(text) {
+		const element = document.createElement("p");
+		element.textContent = text;
+		return element;
+	}
+
 	chrome.runtime.onMessage.addListener((obj, sender, response) => {
 		const { type, query } = obj;
 		const isInIframe = window.top !== window.self;
-
 		const hasQuoteOutput = document.querySelector("#quote-output") !== null;
 
 		if (type === "SEARCH" && !isInIframe && !hasQuoteOutput) {
-			const div = document.createElement("div");
-			div.id = "quote-output";
+			const quoteOutput = createQuoteOutput();
+			addQuoteOutputToDom(quoteOutput);
 
-			if (!hasComplementaryResult()) {
-				if (hasFeaturedSnippet()) {
-					div.className = "no-complementary-result-low";
-				} else {
-					div.className = "no-complementary-result-high";
-				}
+			const description = createPWithText("iMotivate");
+			const quoteGeneratedByIMotivate = createPWithText(
+				"Quote generated that is relevant to what you searched:"
+			);
 
-				document.body.append(div);
-			} else {
-				document.querySelector(".TQc1id.rhstc4").prepend(div);
-			}
-
-			const description = document.createElement("p");
-			description.textContent = "iMotivate";
-			div.append(description);
-
-			const quoteGeneratedByIMotivate = document.createElement("p");
-			quoteGeneratedByIMotivate.textContent =
-				"Quote generated that is relevant to what you searched:";
-			div.append(quoteGeneratedByIMotivate);
-
-			const text = document.createElement("p");
-
-			text.textContent = "Generating.";
+			const quoteDisplay = createPWithText("Generating.");
 			const intervalId = setInterval(() => {
-				text.textContent = text.textContent + ".";
-				if (text.textContent === "Generating....") {
-					text.textContent = "Generating.";
+				quoteDisplay.textContent = quoteDisplay.textContent + ".";
+				if (quoteDisplay.textContent === "Generating....") {
+					quoteDisplay.textContent = "Generating.";
 				}
 			}, 500);
-			setQuote(text, query, (error, quote) => {
-				clearInterval(intervalId);
-				favoriteButton.style.display = "block";
 
+			const favoriteButton = createFavoriteButton();
+
+			const clearCacheButton = createClearCacheButton();
+			clearCacheButton.addEventListener("click", () => {
+				storageCache.cachedQuotes = [];
+				chrome.storage.sync.set({ cachedQuotes: [] });
+				quoteDisplay.textContent = "Cached quotes cleared.";
+			});
+
+			setQuote(quoteDisplay, query, (error, quote) => {
+				clearInterval(intervalId);
+
+				if (error) {
+					displayCachedQuote(quoteDisplay);
+					clearCacheButton.style.display = "block";
+					favoriteButton.style.display = "none";
+					return;
+				}
+
+				favoriteButton.style.display = "block";
 				favoriteButton.addEventListener("click", () => {
 					favoriteButton.innerHTML = filledStarIcon;
 
-					chrome.storage.sync.set({
-						favoriteQuotes: [
-							...storageCache.favoriteQuotes,
-							{
-								date: Date.now(),
-								query,
-								quote,
-							},
-						],
-					});
+					addFavoriteQuote(query, quote);
 				});
 
-				if (error) {
-					text.textContent = `Failed to generate quote! ${error}`;
-				}
+				cacheQuote(query, quote);
 			});
 
-			// text.textContent = "Quote generation is disabled";
-			div.append(text);
-
-			const favoriteButton = document.createElement("button");
-			favoriteButton.innerHTML = emptyStarIcon;
-			favoriteButton.classList.add("favorite-button");
-			favoriteButton.style.display = "none";
-
-			div.append(favoriteButton);
-
-			const clearCacheButton = document.createElement("button");
-			clearCacheButton.textContent = "Clear Cached Quotes";
-			clearCacheButton.classList.add("btn");
-
-			div.append(clearCacheButton);
-
-			clearCacheButton.addEventListener("click", () => {
-				storageCache.cachedQuotes = []; // Clear the cached quotes
-				chrome.storage.sync.set({ cachedQuotes: [] }); // Update the storage
-				// Optionally, update the UI to reflect the cleared cache
-				text.textContent = "Cached quotes cleared.";
-			});
+			quoteOutput.append(
+				description,
+				quoteGeneratedByIMotivate,
+				quoteDisplay,
+				favoriteButton,
+				clearCacheButton
+			);
 		}
 	});
 })();
