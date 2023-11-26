@@ -113,7 +113,7 @@ p {
 	background-color: darkgray;
 }
 
-.favorite-quote-search {
+.input {
 	width: 100%;
 	border: none;
 	background-color: var(--color-gray-dark-2);
@@ -125,4 +125,9 @@ p {
 	font-size: inherit;
 	outline: none;
 	box-sizing: border-box;
+}
+
+.quote-author-label {
+	margin: 1rem 0;
+	display: block;
 }

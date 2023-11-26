@@ -1,5 +1,9 @@
 (async () => {
-	let storageCache = { favoriteQuotes: [], cachedQuotes: [] };
+	let storageCache = {
+		favoriteQuotes: [],
+		cachedQuotes: [],
+		quoteAuthor: "",
+	};
 
 	const items = await chrome.storage.sync.get();
 	Object.assign(storageCache, items);
@@ -59,7 +63,12 @@
 					messages: [
 						{
 							role: "user",
-							content: `Generate a quote that is relevant to ${this.prompt} that is under 25 words`,
+							content: `Generate a quote that is relevant to ${
+								this.prompt
+							} that is strictly under 25 words ${
+								storageCache.quoteAuthor &&
+								`that ${storageCache.quoteAuthor} might say`
+							}`,
 						},
 					],
 					temperature: 0.7,

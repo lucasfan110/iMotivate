@@ -4,7 +4,7 @@ const emptyTrashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" heigh
 </svg>`;
 
 (async () => {
-	let storageCache = { favoriteQuotes: [] };
+	let storageCache = { favoriteQuotes: [], quoteAuthor: "" };
 
 	const items = await chrome.storage.sync.get();
 	Object.assign(storageCache, items);
@@ -101,5 +101,13 @@ const emptyTrashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" heigh
 	searchQuoteInput.addEventListener("input", event => {
 		const favoriteQuotes = searchFavoriteQuote(event.target.value);
 		rerenderQuotes(favoriteQuoteDisplay, favoriteQuotes);
+	});
+
+	const quoteAuthorInput = document.querySelector("#quote-author");
+	quoteAuthorInput.value = storageCache.quoteAuthor;
+	quoteAuthorInput.addEventListener("change", event => {
+		console.log("input changed!");
+		storageCache.quoteAuthor = event.target.value;
+		chrome.storage.sync.set({ quoteAuthor: storageCache.quoteAuthor });
 	});
 })();
