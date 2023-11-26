@@ -90,7 +90,8 @@
 	 * Display quote to the `element` parameter
 	 * @param {HTMLElement} element
 	 * @param {string} prompt
-	 * @param {(error: any, quote: string) => void} onFinish called when quote is generated, or if it failed to generate. It gives two argument: `error` and `quote`
+	 * @param {(error: any, quote: string) => boolean} onFinish called when quote is generated, or if it failed to generate. It gives two argument: `error` and `quote`.
+	 * Returns a boolean to indicate whether the quote should be set or not.
 	 */
 	async function setQuote(element, prompt, onFinish) {
 		let error = undefined;
@@ -100,8 +101,9 @@
 			const quoteGenerator = new QuoteGenerator(prompt);
 			const quote = await quoteGenerator.generateQuote();
 
-			onFinish(error, quote);
-			element.textContent = quote;
+			if (onFinish(error, quote)) {
+				element.textContent = quote;
+			}
 		} catch (e) {
 			error = e;
 			onFinish(error);
@@ -168,8 +170,8 @@
 	 * @param {string} query
 	 * @param {string} quote
 	 */
-	function addFavoriteQuote(query, quote) {
-		chrome.storage.sync.set({
+	async function addFavoriteQuote(query, quote) {
+		await chrome.storage.sync.set({
 			favoriteQuotes: [
 				...storageCache.favoriteQuotes,
 				{
@@ -179,6 +181,16 @@
 				},
 			],
 		});
+	}
+
+	async function removeFavoriteQuote(quote) {
+		storageCache.favoriteQuotes = storageCache.favoriteQuotes.filter(q => {
+			return q.quote !== quote;
+		});
+		await chrome.storage.sync.set({
+			favoriteQuotes: storageCache.favoriteQuotes,
+		});
+		rerenderQuotes(favoriteQuoteDisplay, storageCache.favoriteQuotes);
 	}
 
 	/**
@@ -223,9 +235,9 @@
 
 		if (!hasComplementaryResult()) {
 			if (hasFeaturedSnippet()) {
-				div.className = "no-complementary-result-low";
+				quoteOutput.className = "no-complementary-result-low";
 			} else {
-				div.className = "no-complementary-result-high";
+				quoteOutput.className = "no-complementary-result-high";
 			}
 		}
 
@@ -291,14 +303,36 @@
 					return;
 				}
 
+				const existingFavoriteQuote = storageCache.favoriteQuotes.find(
+					q => q.query === query
+				);
+
+				if (existingFavoriteQuote) {
+					quote = existingFavoriteQuote.quote;
+				}
+
 				favoriteButton.style.display = "block";
 				favoriteButton.addEventListener("click", () => {
-					favoriteButton.innerHTML = filledStarIcon;
-
-					addFavoriteQuote(query, quote);
+					if (!favoriteButton.classList.contains("filled")) {
+						favoriteButton.innerHTML = filledStarIcon;
+						favoriteButton.classList.toggle("filled");
+						addFavoriteQuote(query, quote);
+					} else {
+						favoriteButton.innerHTML = emptyStarIcon;
+						favoriteButton.classList.toggle("filled");
+						removeFavoriteQuote(quote);
+					}
 				});
 
+				if (existingFavoriteQuote) {
+					quoteDisplay.textContent = existingFavoriteQuote.quote;
+					favoriteButton.classList.toggle("filled");
+					favoriteButton.innerHTML = filledStarIcon;
+					return false;
+				}
+
 				cacheQuote(query, quote);
+				return true;
 			});
 
 			quoteOutput.append(

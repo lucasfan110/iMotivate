@@ -3,6 +3,7 @@
 	--color-gray-dark-2: #2d2d2d;
 	--color-gray-1: #888;
 	--color-gray-2: #555;
+	--color-gray-light-1: #aaa;
 	--color-white: #fff;
 }
 
@@ -21,6 +22,18 @@
 
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--color-gray-2);
+}
+
+#favorite-quotes .clearfix::after {
+	content: "";
+	display: table;
+	clear: both;
+}
+
+#favorite-quotes .flex-space-between {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 
 html {
@@ -47,7 +60,7 @@ p {
 }
 
 #favorite-quotes {
-	max-height: 15rem;
+	max-height: 20rem;
 	overflow: auto;
 }
 
@@ -65,11 +78,51 @@ p {
 }
 
 #favorite-quotes .quote .date {
-	text-align: right;
-	display: block;
 	font-size: 1rem;
+	color: var(--color-white);
 }
 
 #favorite-quotes .quote:not(:last-child) {
 	margin-bottom: 1rem;
+}
+
+#favorite-quotes .matched-query {
+	color: var(--color-gray-light-1);
+	font-weight: bold;
+}
+
+#favorite-quotes .remove-button {
+	background: none;
+	border: none;
+	width: 3rem;
+	height: 3rem;
+	transition: background-color 0.2s;
+	cursor: pointer;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#favorite-quotes .remove-button svg {
+	width: 100%;
+	height: 100%;
+}
+
+#favorite-quotes .remove-button:hover {
+	background-color: darkgray;
+}
+
+.favorite-quote-search {
+	width: 100%;
+	border: none;
+	background-color: var(--color-gray-dark-2);
+	color: var(--color-white);
+	border-radius: 6px;
+	margin-bottom: 1rem;
+	padding: 1rem 1.5rem;
+	font-family: inherit;
+	font-size: inherit;
+	outline: none;
+	box-sizing: border-box;
 }
