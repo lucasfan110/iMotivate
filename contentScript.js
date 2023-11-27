@@ -52,6 +52,17 @@
 		 * Generate the request info object for fetching the quote
 		 */
 		generateRequestInit = () => {
+			const containsInappropriateWords = !INAPPROPRIATE_WORDS.every(
+				w => !this.prompt.toUpperCase().includes(w.toUpperCase())
+			);
+
+			const content = `Generate a quote that ${
+				containsInappropriateWords ? "discourages" : "is relevant to"
+			} ${this.prompt} that is strictly under 25 words ${
+				storageCache.quoteAuthor &&
+				`that ${storageCache.quoteAuthor} might say`
+			}`;
+
 			return {
 				method: "POST",
 				headers: {
@@ -63,12 +74,7 @@
 					messages: [
 						{
 							role: "user",
-							content: `Generate a quote that is relevant to ${
-								this.prompt
-							} that is strictly under 25 words ${
-								storageCache.quoteAuthor &&
-								`that ${storageCache.quoteAuthor} might say`
-							}`,
+							content,
 						},
 					],
 					temperature: 0.7,
@@ -199,7 +205,6 @@
 		await chrome.storage.sync.set({
 			favoriteQuotes: storageCache.favoriteQuotes,
 		});
-		rerenderQuotes(favoriteQuoteDisplay, storageCache.favoriteQuotes);
 	}
 
 	/**
@@ -272,11 +277,13 @@
 	}
 
 	chrome.runtime.onMessage.addListener((obj, sender, response) => {
-		const { type, query } = obj;
+		let { type, query } = obj;
 		const isInIframe = window.top !== window.self;
 		const hasQuoteOutput = document.querySelector("#quote-output") !== null;
 
 		if (type === "SEARCH" && !isInIframe && !hasQuoteOutput) {
+			query = query.replace(/ +/g, " ");
+
 			const quoteOutput = createQuoteOutput();
 			addQuoteOutputToDom(quoteOutput);
 

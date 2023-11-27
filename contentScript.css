@@ -1,3 +1,17 @@
+@keyframes quoteOutputEnlarge {
+	0% {
+		transform: scale(0);
+	}
+
+	80% {
+		transform: scale(1.05);
+	}
+
+	100% {
+		transform: scale(1);
+	}
+}
+
 #quote-output {
 	max-width: 25rem;
 	background-color: #1b1c1f;
@@ -8,6 +22,7 @@
 	line-height: 1.6;
 	margin-bottom: 1rem;
 	position: relative;
+	animation: quoteOutputEnlarge 0.5s ease-in-out;
 }
 
 #quote-output.no-complementary-result-high {

@@ -26,7 +26,8 @@
 			],
 			"js": [
 				"icons.js",
-				"contentScript.js"
+				"contentScript.js",
+				"inappropriateWords.js"
 			]
 		}
 	],
